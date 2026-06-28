@@ -149,11 +149,17 @@ class VNStockProvider:
             yield
 
     def _quote_client(self, ticker: str):
-        from vnstock.api.quote import Quote
+        try:
+            from vnstock.api.quote import Quote
+        except Exception as exc:
+            raise ProviderError(f"vnstock is unavailable (install/import failed): {exc}") from exc
 
         symbol = ticker.strip().upper()
-        with self._quiet_vnstock():
-            return Quote(symbol=symbol, source=self.source, show_log=False)
+        try:
+            with self._quiet_vnstock():
+                return Quote(symbol=symbol, source=self.source, show_log=False)
+        except Exception as exc:
+            raise ProviderError(f"vnstock could not initialise {symbol} ({self.source}): {exc}") from exc
 
     def get_history(self, ticker: str, days: int = 365) -> pd.DataFrame:
         symbol = ticker.strip().upper()

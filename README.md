@@ -1,134 +1,99 @@
-# Interactive Black-Scholes Option Pricing App
+# Dr. Phil's Quant Lab — Options Pricer
 
-An interactive **Streamlit app** that provides a comprehensive tool for analyzing options pricing, profit & loss (P&L), and mispricing using the Black-Scholes model. The app integrates theoretical pricing with real market data to help users make informed decisions about options trading.
+Teaching-grade Streamlit app for undergraduate Derivatives at WSU Vietnam. This fork adapts George Dros' original MIT-licensed Black-Scholes Interactive Heatmap into a black-gold Quant Lab interface with separate US and Vietnam market modes.
 
----
+## Attribution and License
 
-## Features
+Original app: [George-Dros/Black-Scholes-Interactive-heatmap](https://github.com/George-Dros/Black-Scholes-Interactive-heatmap) by George Dros, MIT License.
 
-### 1. **Pricing Heatmaps**
-- Visualize theoretical **call** and **put option prices** across a range of:
-  - Spot Prices
-  - Volatilities
-- Understand how option values behave under different market conditions.
+This adaptation keeps the original `LICENSE`; new code in this fork is also released under MIT. Data-provider packages and data sources have their own terms. In particular, review `vnstock` terms before redistribution or commercial use.
 
-### 2. **P&L Analysis**
-- Calculate the profit & loss (P&L) for options based on user-defined purchase prices.
-- Heatmaps color-coded:
-  - **Green**: Positive P&L.
-  - **Red**: Negative P&L.
+## What the App Does
 
-### 3. **Mispricing Visualization**
-- Compare **theoretical Black-Scholes prices** with real market data:
-  - **Blue**: Undervalued options (buying opportunities).
-  - **Red**: Overvalued options (selling or avoid opportunities).
-- Analyze mispricing across a range of spot prices and volatilities.
+- Prices theoretical European calls and puts with the Black-Scholes model.
+- Shows a visible put-call parity sanity check.
+- Displays Greeks in plain English.
+- Builds spot-by-volatility heatmaps.
+- Draws expiry payoff diagrams.
+- Shows the Black-Scholes formula with the current inputs substituted.
+- Keeps US listed-option comparison separate from Vietnam spot-driven theory.
 
-### 4. **Real Market Data Integration**
-- Fetch live market data, including:
-  - Spot Price
-  - Strike Price
-  - Implied Volatility
-  - Option Prices
-- Ticker selection powered by **Yahoo Finance**.
+## Market Modes
 
----
+### Vietnam: spot-driven theory
 
-## Installation
+Vietnam has no exchange-listed single-stock equity options. The VN mode therefore uses real VN spot/history data only to drive theoretical pricing, Greeks, heatmaps, and payoff diagrams.
 
-To run this app locally, follow these steps:
+Supported free/default data path:
 
-### Prerequisites
-Ensure you have Python 3.8 or later installed.
+- `vnstock==4.0.4`
+- Default source: `KBS`
+- Alternative source: `VCI`
+- Manual spot fallback for class use when data is missing
 
-### Clone the Repository
+Useful sample underlyings:
+
+- `FPT`
+- `MWG`
+- `HPG`
+- `VNM`
+- `VN30`
+- `VNINDEX`
+
+### United States: listed-option demo
+
+The US mode keeps the Yahoo Finance option-chain demo from the upstream app. It compares theoretical Black-Scholes values with real listed-option prices for tickers such as `SPY` or `AAPL`.
+
+### FiinQuant instructor tier
+
+`FiinQuantProvider` is included as a documented swap-in stub. It intentionally does not ship with credentials or paid-data assumptions. Configure `FIINQUANT_API_KEY` only outside the repository if an instructor chooses to implement that adapter.
+
+## Setup
+
+Python runtime used for this fork:
+
 ```bash
-git clone https://github.com/your-repo-name/black-scholes-app.git
-cd black-scholes-app
+Python 3.12.10
 ```
 
-### Install Dependencies
-Install the required libraries using the provided `requirements.txt` file:
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+Install pinned dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
-## Usage
 
-### Run the App
-
-Start the Streamlit app using:
-```bash
-streamlit run app.py
-```
-
-### Features Walkthrough
-
-1. Select Analysis Mode:
-- Pricing Heatmaps
-- P&L Analysis
-- Mispricing Heatmaps
-  
-2. Configure Inputs:
-- Ticker symbol (e.g., SPY, AAPL).
-- Spot price and volatility range.
-- Purchase price for P&L mode.
-  
-3. Interactive Results:
-- Explore heatmaps to gain insights into options pricing dynamics.
-
-## Requirements
-
-The app depends on the following Python libraries:
-
-- yfinance: For fetching live market data.
-- numpy: For numerical computations.
-- scipy: To calculate the Black-Scholes formula.
-- pandas: For data manipulation.
-- seaborn and matplotlib: For visualizing heatmaps.
-- streamlit: For building the interactive web app.
-
-## Project Structure
+Run the app:
 
 ```bash
-black-scholes-app/
-├── main.py               # Main Streamlit app script
-├── functions.py          # Helper functions for calculations and data fetching
-├── screenshots/          # Screenshots of the app 
-│   ├── pricing_heatmap.jpg 
-│   ├── pnl_heatmap.jpg
-│   ├── mispricing_heatmap.jpg
-├── requirements.txt      # Dependencies for the project
-├──  LICENSE              # Project license (MIT)
-├── README.md             # Documentation (this file)
+streamlit run main.py
 ```
 
-## Screenshots
+## Data and Secrets
 
-1. Pricing Heatmaps
+- No API keys, tokens, or secrets are committed.
+- `.streamlit/secrets.toml`, `.env`, and `.env.*` are ignored.
+- The core student path runs on free data via Yahoo Finance and vnstock/manual fallback.
 
-Visualize call and put option prices for different spot prices and volatilities.
+## Files
 
-![Pricing Heatmap](screenshots/pricing_heatmap.jpg "Pricing Heatmap Example")
+```text
+main.py              Streamlit app
+functions.py         Original Black-Scholes and heatmap calculation helpers
+data_providers.py    PriceProvider abstraction and US/VN provider implementations
+quant_helpers.py     Parity, Greeks, payoff, and formula teaching helpers
+charts.py            Dark Quant Lab chart rendering
+style.py             Single CSS injection point
+.streamlit/config.toml
+CHANGELOG.md
+```
 
-2. P&L Heatmaps
+## Covered Warrant Phase 2
 
-Analyze profits and losses for various scenarios.
-
-![P&L Heatmap](screenshots/P&L_heatmap.jpg "P&L Heatmap Example")
-
-3. Mispricing Visualization
-
-Identify undervalued and overvalued options.
-
-![Mispricing Heatmap](screenshots/mispricing_heatmap.jpg "Mispricing Heatmap Example")
-
-## Future Enhancements
-
-- Add 3D visualization for pricing and P&L surfaces.
-- Include support for multiple tickers in one analysis.
-- Extend functionality to analyze options strategies (e.g., spreads).
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
+Vietnam covered warrants on HOSE are real single-stock derivatives and can be priced with Black-Scholes-type models adjusted for conversion ratio. This is documented as a high-value phase 2 teaching hook but is not part of the core app path yet.

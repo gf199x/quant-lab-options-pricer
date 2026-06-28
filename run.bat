@@ -47,6 +47,13 @@ if defined NEED_SETUP (
   call ".venv\Scripts\activate.bat"
 )
 
+REM --- skip Streamlit's first-run "Email:" onboarding prompt ---
+if not exist "%USERPROFILE%\.streamlit\credentials.toml" (
+  if not exist "%USERPROFILE%\.streamlit" mkdir "%USERPROFILE%\.streamlit"
+  > "%USERPROFILE%\.streamlit\credentials.toml" echo [general]
+  >> "%USERPROFILE%\.streamlit\credentials.toml" echo email = ""
+)
+
 echo.
 echo [run] Launching Quant Lab... your browser will open at http://localhost:8501
 echo       Keep this window open while using the app; press Ctrl+C to stop.

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import streamlit as st
+from matplotlib import patheffects as pe
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 
 
@@ -42,6 +43,15 @@ def _style_heatmap_colorbar(fig: plt.Figure) -> None:
                 colorbar.outline.set_edgecolor("#2A2C32")
 
 
+def _legible_annotations(ax) -> None:
+    """Give heatmap numbers a dark halo and a slightly larger weight so they
+    stay readable on light gold cells as well as dark cells (accessibility)."""
+    for text in ax.texts:
+        text.set_fontsize(9)
+        text.set_fontweight("medium")
+        text.set_path_effects([pe.withStroke(linewidth=1.6, foreground=BG)])
+
+
 def render_value_heatmaps(mode: str, call_df: pd.DataFrame, put_df: pd.DataFrame, call_pnl_df=None, put_pnl_df=None) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(18, 8))
     _style_figure(fig, axes)
@@ -73,6 +83,7 @@ def render_value_heatmaps(mode: str, call_df: pd.DataFrame, put_df: pd.DataFrame
         ax.set_title(title, pad=16, fontsize=15)
         ax.set_xlabel("Spot")
         ax.set_ylabel("Volatility")
+        _legible_annotations(ax)
 
     _style_heatmap_colorbar(fig)
     fig.tight_layout()
@@ -102,6 +113,7 @@ def render_market_heatmaps(call_df: pd.DataFrame, put_df: pd.DataFrame) -> None:
         ax.set_title(title, pad=16, fontsize=15)
         ax.set_xlabel("Spot")
         ax.set_ylabel("Implied volatility")
+        _legible_annotations(ax)
 
     _style_heatmap_colorbar(fig)
     fig.tight_layout()
@@ -127,10 +139,12 @@ def render_history_chart(history: pd.DataFrame, ticker: str) -> None:
 def render_payoff_chart(payoff: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(12, 4.8))
     _style_figure(fig, [ax])
+    strike = float(payoff["strike"].iloc[0])
     ax.axhline(0, color="#3A3D45", linewidth=1)
-    ax.axvline(payoff["strike"].iloc[0], color=MUTED, linestyle="--", linewidth=1)
-    ax.plot(payoff["spot"], payoff["long_call"], color=GOLD, linewidth=2.2, label="Long call")
-    ax.plot(payoff["spot"], payoff["long_put"], color=TEAL, linewidth=2.2, label="Long put")
+    ax.axvline(strike, color=MUTED, linestyle="--", linewidth=1)
+    ax.plot(payoff["spot"], payoff["long_call"], color=GOLD, linewidth=2.4, linestyle="-", label="Long call (solid)")
+    ax.plot(payoff["spot"], payoff["long_put"], color=TEAL, linewidth=2.4, linestyle="--", label="Long put (dashed)")
+    ax.annotate("K", xy=(strike, 0), xytext=(0, 6), textcoords="offset points", color=MUTED, fontsize=9, ha="center")
     ax.set_title("Expiry payoff, net of selected premium", pad=14)
     ax.set_xlabel("Spot at expiry")
     ax.set_ylabel("Payoff")

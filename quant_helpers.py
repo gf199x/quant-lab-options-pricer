@@ -121,10 +121,37 @@ def greek_table(snapshot: GreekSnapshot) -> pd.DataFrame:
 
 
 def formula_substitution(S: float, K: float, r: float, T: float, sigma: float, q: float) -> str:
+    """Worked, number-by-number Black-Scholes substitution for teaching:
+    shows d1, d2, N(d1), N(d2), the discount factors, and the call/put price
+    each assembled from those pieces — bridging calculator output and hand
+    computation. The resulting Call/Put match the app's priced values."""
+    if S <= 0 or K <= 0 or T <= 0 or sigma <= 0:
+        return "Enter S > 0, K > 0, T > 0 and sigma > 0 to see the worked substitution."
+
+    d1, d2 = _d1_d2(S, K, r, T, sigma, q)
+    sqrt_t = np.sqrt(T)
+    n_d1, n_d2 = norm.cdf(d1), norm.cdf(d2)
+    n_neg_d1, n_neg_d2 = norm.cdf(-d1), norm.cdf(-d2)
+    disc_q, disc_r = np.exp(-q * T), np.exp(-r * T)
+    call = S * disc_q * n_d1 - K * disc_r * n_d2
+    put = K * disc_r * n_neg_d2 - S * disc_q * n_neg_d1
+
     return (
-        "Black-Scholes with continuous dividend yield:\n\n"
-        "d1 = [ln(S/K) + (r - q + sigma^2/2)T] / (sigma sqrt(T))\n\n"
-        "d2 = d1 - sigma sqrt(T)\n\n"
-        f"Current inputs: S={S:.4f}, K={K:.4f}, r={r:.4%}, q={q:.4%}, "
-        f"T={T:.4f}, sigma={sigma:.4%}."
+        "BLACK-SCHOLES, STEP BY STEP (continuous dividend yield q)\n"
+        "--------------------------------------------------------\n"
+        f"Inputs:  S = {S:.4f}   K = {K:.4f}   r = {r:.4%}   q = {q:.4%}\n"
+        f"         T = {T:.4f} yr   sigma = {sigma:.4%}\n\n"
+        "d1 = [ln(S/K) + (r - q + sigma^2/2)·T] / (sigma·sqrt(T))\n"
+        f"   = [ln({S:.4f}/{K:.4f}) + ({r:.4f} - {q:.4f} + {sigma ** 2 / 2:.4f})·{T:.4f}]"
+        f" / ({sigma:.4f}·{sqrt_t:.4f})\n"
+        f"   = {d1:.4f}\n\n"
+        f"d2 = d1 - sigma·sqrt(T) = {d1:.4f} - {sigma:.4f}·{sqrt_t:.4f} = {d2:.4f}\n\n"
+        f"N(d1) = {n_d1:.4f}     N(d2) = {n_d2:.4f}\n"
+        f"e^(-qT) = {disc_q:.4f}     e^(-rT) = {disc_r:.4f}\n\n"
+        "Call = S·e^(-qT)·N(d1) - K·e^(-rT)·N(d2)\n"
+        f"     = {S:.4f}·{disc_q:.4f}·{n_d1:.4f} - {K:.4f}·{disc_r:.4f}·{n_d2:.4f}\n"
+        f"     = {call:.4f}\n\n"
+        "Put  = K·e^(-rT)·N(-d2) - S·e^(-qT)·N(-d1)\n"
+        f"     = {K:.4f}·{disc_r:.4f}·{n_neg_d2:.4f} - {S:.4f}·{disc_q:.4f}·{n_neg_d1:.4f}\n"
+        f"     = {put:.4f}"
     )

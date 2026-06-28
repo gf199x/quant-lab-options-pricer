@@ -20,6 +20,15 @@ FALLBACK_SPOT = {
     "VNINDEX": 1280.0,
 }
 
+VN_INDEX_TICKERS = {"VN30", "VNINDEX"}
+
+
+def vn_unit_label(ticker: str) -> str:
+    """Explicit price unit per instrument: indices quote in points, single
+    stocks quote in thousands of VND (vnstock's scale). Centralised here so a
+    new ticker is labelled in one place rather than via scattered hardcodes."""
+    return "index points" if ticker in VN_INDEX_TICKERS else "VND x1,000"
+
 
 st.set_page_config(
     page_title="Dr. Phil's Quant Lab — Options Pricer",
@@ -117,6 +126,27 @@ def render_theory_stack(
         metric_card("Spot / strike", f"{spot:,.2f} / {strike:,.2f}", f"sigma {volatility:.2%}; T {maturity:.3f} years")
 
     render_parity_badge(parity)
+
+    # Moneyness, intrinsic value and time value — the undergraduate decomposition.
+    moneyness = spot / strike if strike > 0 else float("nan")
+    call_intrinsic = max(spot - strike, 0.0)
+    put_intrinsic = max(strike - spot, 0.0)
+    call_time_value = call_price - call_intrinsic
+    put_time_value = put_price - put_intrinsic
+    if abs(spot - strike) <= 0.0025 * strike:
+        moneyness_label = "At the money (S ≈ K)"
+    elif spot > strike:
+        moneyness_label = "Call in-the-money · Put out-of-the-money"
+    else:
+        moneyness_label = "Call out-of-the-money · Put in-the-money"
+
+    mny_col, call_col, put_col = st.columns([1, 1, 1.3])
+    with mny_col:
+        metric_card("Moneyness (S / K)", f"{moneyness:.3f}", moneyness_label)
+    with call_col:
+        metric_card("Call: intrinsic / time", f"{call_intrinsic:,.2f} / {call_time_value:,.2f}", "price = intrinsic + time value")
+    with put_col:
+        metric_card("Put: intrinsic / time", f"{put_intrinsic:,.2f} / {put_time_value:,.2f}", "intrinsic = max(K − S, 0)")
 
     st.markdown('<div class="ql-rule"></div>', unsafe_allow_html=True)
     greeks = calculate_greeks(spot, strike, risk_free, maturity, volatility, dividend_yield)
@@ -243,7 +273,7 @@ if market_mode == "Vietnam: spot-driven theory":
     use_manual_spot = st.sidebar.checkbox("Use manual spot", value=quote is None)
     effective_manual = use_manual_spot or quote is None
     spot = float(manual_spot if effective_manual else quote.price)
-    currency = "" if ticker in {"VN30", "VNINDEX"} else "VND x1,000"
+    currency = vn_unit_label(ticker)
 
     st.sidebar.header("Model Inputs")
     strike, volatility, maturity, risk_free = option_inputs(spot, default_rate=0.04)

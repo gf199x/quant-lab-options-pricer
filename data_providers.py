@@ -75,7 +75,10 @@ class YFinanceProvider:
 
     def get_spot(self, ticker: str) -> PriceQuote:
         symbol = ticker.strip().upper()
-        history = yf.Ticker(symbol).history(period="5d")
+        try:
+            history = yf.Ticker(symbol).history(period="5d")
+        except Exception as exc:  # network / API failure -> degrade gracefully
+            raise ProviderError(f"Yahoo Finance request failed for {symbol}: {exc}") from exc
         if history.empty or history["Close"].dropna().empty:
             raise ProviderError(f"No recent Yahoo Finance close price for {symbol}.")
 
@@ -86,7 +89,10 @@ class YFinanceProvider:
     def get_history(self, ticker: str, days: int = 365) -> pd.DataFrame:
         symbol = ticker.strip().upper()
         period = "1y" if days <= 366 else "2y"
-        history = yf.Ticker(symbol).history(period=period)
+        try:
+            history = yf.Ticker(symbol).history(period=period)
+        except Exception as exc:  # network / API failure -> degrade gracefully
+            raise ProviderError(f"Yahoo Finance history request failed for {symbol}: {exc}") from exc
         if history.empty:
             raise ProviderError(f"No Yahoo Finance history for {symbol}.")
         history = history.reset_index()
@@ -96,14 +102,20 @@ class YFinanceProvider:
         symbol = ticker.strip().upper()
         yf_ticker = yf.Ticker(symbol)
         spot_quote = self.get_spot(symbol)
-        expirations = list(yf_ticker.options)
+        try:
+            expirations = list(yf_ticker.options)
+        except Exception as exc:  # network / API failure -> degrade gracefully
+            raise ProviderError(f"Yahoo Finance could not list option expirations for {symbol}: {exc}") from exc
         if not expirations:
             raise ProviderError(f"Yahoo Finance has no listed option expirations for {symbol}.")
 
         calls_frames: list[pd.DataFrame] = []
         puts_frames: list[pd.DataFrame] = []
         for expiry in expirations:
-            chain = yf_ticker.option_chain(expiry)
+            try:
+                chain = yf_ticker.option_chain(expiry)
+            except Exception as exc:  # network / API failure -> degrade gracefully
+                raise ProviderError(f"Yahoo Finance option chain request failed for {symbol} ({expiry}): {exc}") from exc
             calls = chain.calls.copy()
             puts = chain.puts.copy()
             calls["expiration"] = expiry
@@ -166,8 +178,11 @@ class VNStockProvider:
         end = date.today()
         start = end - timedelta(days=days)
         quote = self._quote_client(symbol)
-        with self._quiet_vnstock():
-            history = quote.history(start=start.isoformat(), end=end.isoformat())
+        try:
+            with self._quiet_vnstock():
+                history = quote.history(start=start.isoformat(), end=end.isoformat())
+        except Exception as exc:  # network / API failure -> degrade gracefully
+            raise ProviderError(f"vnstock history request failed for {symbol} ({self.source}): {exc}") from exc
         return _normalize_ohlcv(history)
 
     def get_spot(self, ticker: str) -> PriceQuote:

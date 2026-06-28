@@ -7,7 +7,14 @@ import streamlit as st
 import charts
 import functions as bs
 from data_providers import FiinQuantProvider, ProviderError, VNStockProvider, YFinanceProvider
-from quant_helpers import calculate_greeks, formula_substitution, greek_table, parity_check, payoff_table
+from quant_helpers import (
+    calculate_greeks,
+    covered_warrant_metrics,
+    formula_substitution,
+    greek_table,
+    parity_check,
+    payoff_table,
+)
 from style import apply_quantlab_style, render_footer
 
 
@@ -312,13 +319,57 @@ if market_mode == "Vietnam: spot-driven theory":
         purchase_price=purchase_price,
     )
 
-    with st.expander("Phase 2 teaching hook: covered warrants"):
+    with st.expander("Phase 2 lab — Covered Warrant pricer (HOSE)"):
         st.markdown(
-            """
-            Covered warrants are real single-stock derivatives listed on HOSE and can be priced with
-            Black-Scholes-type models after adjusting for the conversion ratio. This app documents that
-            route but keeps the core VN mode focused on spot-driven theoretical pricing.
-            """
+            "Vietnamese **covered warrants (CW)** are real single-stock derivatives listed on HOSE: "
+            "European, cash-settled call warrants. One warrant is worth the Black-Scholes value of the "
+            "call on **one share, divided by the conversion ratio k** (quoted *k:1*). Enter a real CW's "
+            "terms to compare the model price against its market price. Uses the spot, rate, dividend "
+            "and sigma from the panel above."
+        )
+        cw_in = st.columns(4)
+        with cw_in[0]:
+            cw_strike = st.number_input("Exercise price K", min_value=0.01, value=float(round(0.95 * spot, 2)), format="%.2f", key="cw_strike")
+        with cw_in[1]:
+            cw_maturity = st.number_input("Maturity (years)", min_value=0.01, max_value=5.0, value=0.50, format="%.4f", key="cw_maturity")
+        with cw_in[2]:
+            cw_ratio = st.number_input("Conversion ratio k (for k:1)", min_value=1.0, value=5.0, step=1.0, format="%.2f", key="cw_ratio")
+        with cw_in[3]:
+            cw_market = st.number_input("Market CW price / warrant", min_value=0.0, value=2.40, format="%.4f", key="cw_market")
+
+        cw_call = bs.call_bs_value(spot, cw_strike, risk_free, cw_maturity, volatility, q=dividend_yield)
+        cw_delta = calculate_greeks(spot, cw_strike, risk_free, cw_maturity, volatility, dividend_yield).call_delta
+        cw = covered_warrant_metrics(
+            spot=spot,
+            strike=cw_strike,
+            bs_call_value=cw_call,
+            call_delta=cw_delta,
+            conversion_ratio=cw_ratio,
+            market_price=cw_market,
+        )
+
+        cw_row1 = st.columns(3)
+        with cw_row1[0]:
+            metric_card("Theoretical CW value", money(cw.theoretical_value, currency), "BS call on 1 share ÷ k")
+        with cw_row1[1]:
+            metric_card("Market CW price", money(cw.market_price, currency), "what investors pay")
+        with cw_row1[2]:
+            verdict = "rich vs model" if cw.dollar_diff > 0 else "cheap vs model"
+            pct = f"{cw.pct_diff:+.2f}%" if cw.pct_diff == cw.pct_diff else "n/a"
+            metric_card("Mispricing", f"{cw.dollar_diff:+,.4f} ({pct})", verdict)
+
+        cw_row2 = st.columns(3)
+        with cw_row2[0]:
+            metric_card("Break-even premium", f"{cw.breakeven_premium_pct:+.2f}%", f"stock must reach {cw.breakeven_spot:,.2f}")
+        with cw_row2[1]:
+            metric_card("Conversion ratio", f"{cw.conversion_ratio:.0f} : 1", "warrants per share")
+        with cw_row2[2]:
+            metric_card("Effective gearing", f"{cw.effective_gearing:,.2f}×", "approx % move in CW per % move in stock")
+
+        st.caption(
+            "HOSE CWs are European, cash-settled and issuer-hedged (exercise does not dilute the company). "
+            "The model uses your sigma as the issuer's pricing volatility — an educational approximation, "
+            "not investment advice."
         )
 
 else:

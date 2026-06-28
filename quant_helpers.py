@@ -155,3 +155,53 @@ def formula_substitution(S: float, K: float, r: float, T: float, sigma: float, q
         f"     = {K:.4f}·{disc_r:.4f}·{n_neg_d2:.4f} - {S:.4f}·{disc_q:.4f}·{n_neg_d1:.4f}\n"
         f"     = {put:.4f}"
     )
+
+
+@dataclass(frozen=True)
+class CoveredWarrantResult:
+    theoretical_value: float
+    market_price: float
+    dollar_diff: float
+    pct_diff: float
+    breakeven_spot: float
+    breakeven_premium_pct: float
+    effective_gearing: float
+    conversion_ratio: float
+
+
+def covered_warrant_metrics(
+    *,
+    spot: float,
+    strike: float,
+    bs_call_value: float,
+    call_delta: float,
+    conversion_ratio: float,
+    market_price: float,
+) -> CoveredWarrantResult:
+    """Price one HOSE covered warrant and compare it to its market price.
+
+    A Vietnamese CW is a European, cash-settled call on one share. With a
+    conversion ratio k (k warrants exercise into one share, quoted "k:1"),
+    one warrant is worth the Black-Scholes call on one share divided by k.
+    Pass bs_call_value and call_delta from the app's verified functions so the
+    lab stays consistent with the rest of the pricer. The effective gearing
+    uses S/(market·k)·delta_call — i.e. delta is divided by k exactly once.
+    """
+    k = conversion_ratio
+    theoretical = bs_call_value / k if k > 0 else float("nan")
+    dollar_diff = market_price - theoretical
+    pct_diff = (dollar_diff / theoretical * 100) if theoretical > 1e-9 else float("nan")
+    breakeven_spot = strike + market_price * k
+    breakeven_premium_pct = ((breakeven_spot - spot) / spot * 100) if spot > 0 else float("nan")
+    notional = market_price * k
+    effective_gearing = (spot / notional * call_delta) if notional > 1e-9 else float("nan")
+    return CoveredWarrantResult(
+        theoretical_value=theoretical,
+        market_price=market_price,
+        dollar_diff=dollar_diff,
+        pct_diff=pct_diff,
+        breakeven_spot=breakeven_spot,
+        breakeven_premium_pct=breakeven_premium_pct,
+        effective_gearing=effective_gearing,
+        conversion_ratio=k,
+    )

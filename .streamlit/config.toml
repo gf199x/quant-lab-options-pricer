@@ -1,10 +1,21 @@
+# .streamlit/config.toml
+# Dr. Phil's Quant Lab - black-gold art-deco theme (base layer).
+# Component-level styling lives in style.py -> inject_quantlab_style().
+#
+# PLACEMENT: this file must sit at  <repo-root>/.streamlit/config.toml
+# (note the leading dot in the folder name). Streamlit reads it automatically.
+
 [theme]
 base = "dark"
-primaryColor = "#C8A04E"
-backgroundColor = "#0B0B0C"
-secondaryBackgroundColor = "#15161A"
-textColor = "#EDEDED"
-font = "sans serif"
+primaryColor = "#C8A04E"                # gold accent: sliders, focus, links
+backgroundColor = "#0B0B0C"             # app canvas
+secondaryBackgroundColor = "#15161A"    # sidebar, cards, inputs
+textColor = "#EDEDED"                   # primary text
+font = "sans serif"                     # body = Inter, applied in style.py
 
-[browser]
-gatherUsageStats = false
+# Streamlit >= ~1.38 also supports custom heading/body fonts and [[theme.fontFaces]]
+# directly here. We deliberately load fonts in style.py instead (one place to
+# retune), so this section stays compatible across Streamlit versions.
+
+[client]
+toolbarMode = "minimal"                 # cleaner screen for students

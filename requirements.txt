@@ -1,7 +1,7 @@
 yfinance==1.4.1
-numpy==2.2.6
+numpy==2.2.6  # held <2.3 for vnstock/vnstock_ezchart compatibility
 scipy==1.18.0
-pandas==2.3.3
+pandas==2.3.3  # held <3 for vnstock/vnstock_ezchart compatibility
 seaborn==0.13.2
 matplotlib==3.11.0
 streamlit==1.58.0

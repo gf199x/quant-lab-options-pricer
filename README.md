@@ -6,7 +6,9 @@ Teaching-grade Streamlit app for undergraduate Derivatives at WSU Vietnam. This 
 
 Original app: [George-Dros/Black-Scholes-Interactive-heatmap](https://github.com/George-Dros/Black-Scholes-Interactive-heatmap) by George Dros, MIT License.
 
-This adaptation keeps the original `LICENSE`; new code in this fork is also released under MIT. Data-provider packages and data sources have their own terms. In particular, review `vnstock` terms before redistribution or commercial use.
+This adaptation keeps the original `LICENSE`; new code in this fork is also released under MIT. Data-provider packages and data sources have their own terms.
+
+Important: `vnstock` is not open-source/MIT. Its PyPI license field is `Custom: Personal, research, non-commercial`; other use requires contacting `support@vnstocks.com`, and its classifier is `License :: Other/Proprietary License`. Because the VN mode depends on `vnstock`, this repository as a whole is not freely redistributable for commercial use without clearing the `vnstock` license.
 
 ## What the App Does
 

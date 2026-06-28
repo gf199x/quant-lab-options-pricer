@@ -11,6 +11,16 @@ from quant_helpers import calculate_greeks, formula_substitution, greek_table, p
 from style import apply_quantlab_style, render_footer
 
 
+FALLBACK_SPOT = {
+    "FPT": 120.0,
+    "MWG": 60.0,
+    "HPG": 27.0,
+    "VNM": 65.0,
+    "VN30": 1300.0,
+    "VNINDEX": 1280.0,
+}
+
+
 st.set_page_config(
     page_title="Dr. Phil's Quant Lab — Options Pricer",
     page_icon="⚛",
@@ -156,6 +166,7 @@ def render_theory_stack(
 
     st.subheader("Spot × Volatility Heatmap")
     charts.render_value_heatmaps(heatmap_mode, call_df, put_df, call_pnl_df, put_pnl_df)
+    st.caption("Heatmap sweeps a range of volatilities (y-axis); the cards and Greeks above use your single sigma input.")
 
     st.subheader("Payoff at Expiry")
     payoff = payoff_table(spot, strike, call_premium=call_price, put_premium=put_price)
@@ -227,10 +238,11 @@ if market_mode == "Vietnam: spot-driven theory":
             provider_note = str(exc)
             st.info(f"{provider_note} Use manual spot below.")
 
-    default_spot = quote.price if quote else 70.0
+    default_spot = quote.price if quote else FALLBACK_SPOT.get(ticker, 70.0)
     manual_spot = st.sidebar.number_input("Manual spot fallback", min_value=0.01, value=float(default_spot), format="%.2f")
     use_manual_spot = st.sidebar.checkbox("Use manual spot", value=quote is None)
-    spot = float(manual_spot if use_manual_spot or quote is None else quote.price)
+    effective_manual = use_manual_spot or quote is None
+    spot = float(manual_spot if effective_manual else quote.price)
     currency = "" if ticker in {"VN30", "VNINDEX"} else "VND x1,000"
 
     st.sidebar.header("Model Inputs")
@@ -245,7 +257,12 @@ if market_mode == "Vietnam: spot-driven theory":
     with data_cols[0]:
         metric_card("Underlying", ticker, data_choice)
     with data_cols[1]:
-        metric_card("Spot used", money(spot, currency), "Manual override" if use_manual_spot else quote.note)
+        metric_card("Spot used", money(spot, currency), "Manual override" if effective_manual else quote.note)
+        if quote is None:
+            st.caption(
+                "Placeholder only: overwrite with a real price/level before teaching. "
+                "Single stocks use VND x1,000; VN30/VNINDEX use index points."
+            )
     with data_cols[2]:
         as_of = quote.as_of if quote else "Manual"
         metric_card("Data timestamp", as_of, provider_note)
